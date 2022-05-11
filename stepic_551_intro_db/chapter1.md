@@ -61,7 +61,7 @@ WHERE recipient_email='leo@mail.com'
 ```
 ---
 
-###УДАЛЕНИЕ ЗАПИСИ В ТАБЛИЦУ
+###УДАЛЕНИЕ ЗАПИСИ В ТАБЛИЦЕ
 ```
 delete from billing 
 where payer_email is NULL
@@ -117,4 +117,10 @@ FROM project WHERE DATEDIFF(project_finish, project_start)>0
 GROUP BY client_name
 ORDER BY max_days DESC #обратный счет как -
 LIMIT 10;
+```
+```
+SELECT count(1),
+sum(budget) as revenue,
+AVG(DATEDIFF(project_finish, project_start)) as avg_days
+FROM project WHERE DATEDIFF(project_finish, project_start)>0;
 ```
