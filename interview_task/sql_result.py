@@ -20,6 +20,18 @@ FROM result
 JOIN user ON result.user_id = user.id
 JOIN subject ON result.subject_id = subject.id
 GROUP BY name
-ORDER BY result
+ORDER BY result DESC
+LIMIT 3;
+"""
+
+"""
+SELECT user.name as name, result, subject.name as subject
+FROM result
+JOIN user ON result.user_id = user.id
+JOIN subject ON result.subject_id = subject.id
+WHERE SUM(user.result.subject) = 3 
+GROUP BY name
+HAVING SUM(user.result.subject) > 200
+ORDER BY result DESC
 LIMIT 3;
 """

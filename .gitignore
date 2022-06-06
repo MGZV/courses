@@ -28,6 +28,8 @@ ENV/
 env.bak/
 venv.bak/
 
+/ya
+
 db.sqlite3
 migrations/**initial**
 **pycache**

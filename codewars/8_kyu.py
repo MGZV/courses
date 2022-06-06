@@ -12,5 +12,18 @@ For example, for [1, 2, 2] it should return 9 because 1^2 + 2^2 + 2^2 = 9."""
 
 # best solution
 
-def square_sum(numbers):
-    return sum(x ** 2 for x in numbers)
+# def square_sum(numbers):
+#     return sum(x ** 2 for x in numbers)
+
+
+#################################################
+
+def abbrev_name(name):
+    splited_name= name.split()
+    print(name.split())
+    two_letters = ''
+    for i in splited_name:
+        two_letters = two_letters + i[0].capitalize() + "."
+    return two_letters.strip('.')
+    # print(two_letters.strip('.'))
+abbrev_name("Sam Harris")
