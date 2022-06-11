@@ -230,7 +230,7 @@ CREATE TABLE book (
 Задание
 
 Добавьте три последние записи (с ключевыми значениями 6, 7, 8) в таблицу book, первые 5 записей уже добавлены:
-
+```
 CREATE TABLE book (
     book_id INT PRIMARY KEY AUTO_INCREMENT, 
     title VARCHAR(50), 
@@ -240,7 +240,7 @@ CREATE TABLE book (
     amount INT, 
     FOREIGN KEY (author_id)  REFERENCES author (author_id) ON DELETE CASCADE
     FOREIGN KEY (genre_id)  REFERENCES genre (genre_id) ON DELETE SET NULL
-
+```
 
 ```
 INSERT INTO author (title, author_id, genre_id, price, amount) 
@@ -249,7 +249,7 @@ VALUES
 ("Черный человек", 3, 2, 570.20, 6),
 ("Лирика", 4, 2, 518.99, 2);
 ```
-
+===
 # 2.2 Запросы на выборку, соединение таблиц
 
 ## Соединение INNER JOIN
@@ -667,7 +667,234 @@ HAVING genre.genre_id IN
 - Название столбца genre_id задается с указанием имени таблицы (genre.genre_id), так как этот столбец входит в структуру двух таблиц book и genre.  Для этого запроса можно было бы указать и book.genre_id, так как эти таблицы связаны внутренним соединением INNER JOIN и имеют одинаковые значения в полях genre.genre_id и book.genre_id.
 
 Задание
+
 Вывести информацию о книгах (название книги, фамилию и инициалы автора, название жанра, цену и количество экземпляров книги), написанных в самых популярных жанрах, в отсортированном в алфавитном порядке по названию книг виде. Самым популярным считать жанр, общее количество экземпляров книг которого на складе максимально.
+
+```
+SELECT  title, name_author, name_genre, price, amount
+FROM 
+    book 
+    INNER JOIN author ON author.author_id = book.author_id
+    INNER JOIN genre ON  book.genre_id = genre.genre_id
+GROUP BY title, name_genre, name_author, genre.genre_id, price, amount
+HAVING genre.genre_id IN
+         (/* выбираем автора, если он пишет книги в самых популярных жанрах*/
+          SELECT query_in_1.genre_id
+          FROM 
+              ( /* выбираем код жанра и количество произведений, относящихся к нему */
+                SELECT genre_id, SUM(amount) AS sum_amount
+                FROM book
+                GROUP BY genre_id
+               )query_in_1
+          INNER JOIN 
+              ( /* выбираем запись, в которой указан код жанр с максимальным количеством книг */
+                SELECT genre_id, SUM(amount) AS sum_amount
+                FROM book
+                GROUP BY genre_id
+                ORDER BY sum_amount DESC
+                LIMIT 1
+               ) query_in_2
+          ON query_in_1.sum_amount= query_in_2.sum_amount
+         )
+ORDER BY 1; 
+```
+---
+
+## Операция соединение, использование USING()
+
+Данный шаг добавлен по предложениям пользователей (Валерий Родькин, Todor Illia  и другие).
+
+При описании соединения таблиц с помощью JOIN в некоторых случаях вместо ON и следующего за ним условия можно использовать оператор USING().
+
+USING позволяет указать набор столбцов, которые есть в обеих объединяемых таблицах. Если база данных хорошо спроектирована, а каждый внешний ключ имеет такое же имя, как и соответствующий первичный ключ (например, genre.genre_id = book.genre_id), тогда можно использовать предложение USING для реализации операции JOIN. 
+
+При этом после SELECT, при использовании столбцов из USING(), необязательно указывать, из какой именно таблицы берется столбец.
+
+Пример
+
+Вывести название книг, фамилии и id их авторов.
+
+Запрос:
+
+Вариант с ON
+```
+SELECT title, name_author, author.author_id /* явно указать таблицу - обязательно */
+FROM 
+    author INNER JOIN book
+    ON author.author_id = book.author_id;
+```
+Вариант с USING
+```
+SELECT title, name_author, author_id /* имя таблицы, из которой берется author_id, указывать не обязательно*/
+FROM 
+    author INNER JOIN book
+    USING(author_id);
+```
+Запись условия соединения с ON является более общим случаем, так как
+
+- позволяет задавать соединение не только по одноименным полям;
+- позволяет использовать произвольное условие на соединение таблиц, при этом в условие может включаться произвольное выражение, например, можно указать связь двух таблиц по двум и более столбцам.
+
+В таблице supply занесена информация о книгах, поступивших на склад.
+
+|supply_id|	title|	author|	price	|amount|
+|---|---|---|---|---|
+|1|	Доктор Живаго	|Пастернак Б.Л.|	618.99|	3|
+|2	|Черный человек |	Есенин С.А.	|570.20	|6|
+|3|	Евгений Онегин|	Пушкин А.С.|	440.80	|5|
+|4|	Идиот	|Достоевский Ф.М.|	360.80|	3|
+Если в таблицах supply  и book есть одинаковые книги,  вывести их название и автора. При этом учесть, что у нескольких авторов могут быть книги с одинаковым названием.
+
+Важно. В данном примере для соединения book и supply использовать USING нельзя, так как: 
+
+в таблице book фамилий авторов вообще нет (их необходимо получить из таблицы author, столбец name_author),  а в таблице supply фамилии занесены в столбец author;
+для однозначной идентификации книги нужно указать, что совпадают не только названия, но и авторы книг.
+Запрос:
+```
+SELECT book.title, name_author
+FROM 
+    author 
+    INNER JOIN book USING (author_id)   
+    INNER JOIN supply ON book.title = supply.title 
+                         and author.name_author = supply.author;
+```
+
+Задание
+
+Если в таблицах supply  и book есть одинаковые книги, которые имеют равную цену,  вывести их название и автора, а также 
+посчитать общее количество экземпляров книг в таблицах supply и book, столбцы назвать Название, Автор  и Количество.
+```
+SELECT book.title AS Название, name_author AS Автор, book.amount + supply.amount AS Количество
+FROM 
+    author 
+    INNER JOIN book USING (author_id)   
+    INNER JOIN supply ON book.title = supply.title 
+                         and book.price = supply.price;
+```
+---
+
+## Запросы на обновление, связанные таблицы
+
+В запросах на обновление можно использовать связанные таблицы:
+```
+UPDATE таблица_1
+     ... JOIN таблица_2
+     ON выражение
+     ...
+SET ...   
+WHERE ...;
+```
+При этом исправлять данные можно во всех используемых в запросе таблицах.
+
+Пример
+
+Для книг, которые уже есть на складе (в таблице book) по той же цене, что и в поставке (supply), увеличить количество на значение, указанное в поставке, а также обнулить количество этих книг в поставке.
+
+Этот запрос должен отобрать строки из таблиц bookи supply такие, что у них совпадают и автор, и название книги. Но в таблице supply фамилия автора записана не числом (id), а текстом. Следовательно, чтобы выполнить сравнение по фамилии автора нужно "подтянуть" таблицу author,  которая связана с bookпо столбцу author_id.  И в логическом выражении, описывающем соединение таблиц, можно будет использовать столбцы из таблиц book, authorи supply. 
+
+Если таблицы логически связаны по двум и более столбцам (на рисунке связи обозначены линиями), возможно через другие таблицы, условие соединение будет включать связи по нужным столбцам через логический оператор AND. Например, для следующих таблиц логическую связь по названию и автору:
+
+
+
+условие соединения можно записать в виде:
+```
+book INNER JOIN author ON author.author_id = book.author_id
+     INNER JOIN supply ON book.title = supply.title 
+                          and supply.author = author.name_author
+```
+Запрос:
+```
+UPDATE book 
+     INNER JOIN author ON author.author_id = book.author_id
+     INNER JOIN supply ON book.title = supply.title 
+                         and supply.author = author.name_author
+SET book.amount = book.amount + supply.amount,
+    supply.amount = 0   
+WHERE book.price = supply.price;
+
+SELECT * FROM book;
+
+SELECT * FROM supply;
+```
+Задание
+Для книг, которые уже есть на складе (в таблице book), но по другой цене, чем в поставке (supply),  необходимо 
+в таблице book увеличить количество на значение, указанное в поставке,  и пересчитать цену. А в таблице  supply обнулить количество этих книг. Формула для пересчета цены:
+
+где  p1, p2 - цена книги в таблицах book и supply;
+
+k1, k2 - количество книг в таблицах book и supply.
+
+```
+UPDATE book 
+     INNER JOIN author ON author.author_id = book.author_id
+     INNER JOIN supply ON book.title = supply.title 
+                         and supply.author = author.name_author
+SET book.price = (book.amount * book.price + supply.amount * supply.price)/(supply.amount + book.amount),
+    book.amount = book.amount + supply.amount,
+    supply.amount = 0   
+WHERE book.price <> supply.price;
+
+SELECT * FROM book;
+
+SELECT * FROM supply;
+```
+---
+
+## Запросы на добавление, связанные таблицы
+
+Запросом на добавление можно добавить записи, отобранные с помощью запроса на выборку, который включает несколько таблиц:
+```
+INSERT INTO таблица (список_полей)
+SELECT список_полей_из_других_таблиц
+FROM 
+    таблица_1 
+    ... JOIN таблица_2 ON ...
+    ...
+```
+Пример
+
+В таблице supply  есть новые книги, которых на складе еще не было. Прежде чем добавлять их в таблицу book,  необходимо
+из таблицы supplyотобрать новых авторов, если таковые имеются.
+
+Запрос:
+```
+SELECT name_author, supply.author
+FROM 
+    author 
+    RIGHT JOIN supply ON author.name_author = supply.author;
+```
+Поскольку таблица author и поле в таблице supply называются одинаково, желательно указывать полную ссылку на поле (supply.author), чтобы запрос был более читабельным.
+
+Выполнив правое внутреннее соединение таблиц, получили значение Null (None) в поле name_author в строке того автора, которого нет в таблице author, в нашем случае это Стивенсон.
+
+Теперь достаточно в запросе задать условие отбора, и список новых авторов готов для включения в таблицу author.
+
+Запрос:
+```
+SELECT supply.author
+FROM 
+    author 
+    RIGHT JOIN supply on author.name_author = supply.author
+WHERE name_author IS Null;
+```
+Задание
+
+Включить новых авторов в таблицу author с помощью запроса на добавление, а затем вывести все данные из таблицы author. 
+Новыми считаются авторы, которые есть в таблице supply, но нет в таблице author.
+
+```
+INSERT INTO author (name_author)
+SELECT supply.author
+FROM 
+    author 
+    RIGHT JOIN supply on author.name_author = supply.author
+WHERE name_author IS Null;
+```
+
+
+
+
+
 
 
 
