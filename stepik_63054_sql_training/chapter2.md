@@ -1225,6 +1225,7 @@ FROM
 GROUP BY author.name_author, book.title
 ORDER BY author.name_author, book.title;
 ```
+ещё вариант
 ```
 SELECT author.name_author, book.title, COUNT(buy_book.amount) AS Количество
 FROM 
@@ -1234,10 +1235,32 @@ FROM
 GROUP BY 1, 2
 ORDER BY 1, 2;
 ```
+Задание 
 
+Вывести города, в которых живут клиенты, оформлявшие заказы в интернет-магазине.
+Указать количество заказов в каждый город, этот столбец назвать Количество.
+Информацию вывести по убыванию количества заказов, а затем в алфавитном порядке по названию городов.
+```
+SELECT city.name_city, COUNT(buy_id) AS Количество
+FROM 
+    city 
+    INNER JOIN client USING(city_id)
+    INNER JOIN buy USING(client_id)
+GROUP BY 1
+ORDER BY 1;
+```
+Задание
 
-
-
+Вывести номера всех оплаченных заказов и даты, когда они были оплачены.
+```
+SELECT city.name_city, COUNT(buy_id) AS Количество
+FROM 
+    city 
+    INNER JOIN client USING(city_id)
+    INNER JOIN buy USING(client_id)
+GROUP BY 1
+ORDER BY 1;
+```
 
 
 
