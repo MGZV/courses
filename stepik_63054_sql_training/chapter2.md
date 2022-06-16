@@ -1253,13 +1253,11 @@ ORDER BY 1;
 
 Вывести номера всех оплаченных заказов и даты, когда они были оплачены.
 ```
-SELECT city.name_city, COUNT(buy_id) AS Количество
+SELECT buy_id, date_step_end
 FROM 
-    city 
-    INNER JOIN client USING(city_id)
-    INNER JOIN buy USING(client_id)
-GROUP BY 1
-ORDER BY 1;
+    step
+    INNER JOIN buy_step USING(step_id)
+WHERE step_id = 1 AND date_step_end IS NOT Null;
 ```
 
 
